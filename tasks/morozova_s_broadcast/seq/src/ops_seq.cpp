@@ -4,10 +4,9 @@
 
 namespace morozova_s_broadcast {
 
-MorozovaSBroadcastSEQ::MorozovaSBroadcastSEQ(const InType &in) : BaseTask() {
+MorozovaSBroadcastSEQ::MorozovaSBroadcastSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  GetOutput().clear();
 }
 
 bool MorozovaSBroadcastSEQ::ValidationImpl() {
