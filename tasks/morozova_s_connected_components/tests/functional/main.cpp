@@ -4,12 +4,8 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <cstdint>
-#include <numeric>
-#include <stdexcept>
 #include <string>
 #include <tuple>
-#include <utility>
 #include <vector>
 
 #include "morozova_s_connected_components/common/include/common.hpp"
@@ -64,11 +60,11 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
     if (output_data.size() != input_data_.size()) {
       return false;
     }
-    for (size_t i = 0; i < input_data_.size(); ++i) {
+    for (std::size_t i = 0; i < input_data_.size(); ++i) {
       if (output_data[i].size() != input_data_[i].size()) {
         return false;
       }
-      for (size_t j = 0; j < input_data_[i].size(); ++j) {
+      for (std::size_t j = 0; j < input_data_[i].size(); ++j) {
         if (input_data_[i][j] == 1) {
           if (output_data[i][j] <= 0) {
             return false;
@@ -94,7 +90,7 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
       if (labels[0] != 1) {
         return false;
       }
-      for (size_t i = 1; i < labels.size(); ++i) {
+      for (std::size_t i = 1; i < labels.size(); ++i) {
         if (labels[i] != labels[i - 1] + 1) {
           return false;
         }

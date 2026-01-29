@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <cstddef>
+#include <vector>
+
 #include "morozova_s_connected_components/common/include/common.hpp"
 #include "morozova_s_connected_components/mpi/include/ops_mpi.hpp"
 #include "morozova_s_connected_components/seq/include/ops_seq.hpp"
@@ -9,7 +12,7 @@ namespace morozova_s_connected_components {
 
 class MorozovaSRunPerfTestConnectedComponents : public ppc::util::BaseRunPerfTests<InType, OutType> {
   const int kImageSize_ = 100;
-  InType input_data_{};
+  InType input_data_;
 
   void SetUp() override {
     input_data_ = std::vector<std::vector<int>>(kImageSize_, std::vector<int>(kImageSize_, 0));
@@ -41,11 +44,11 @@ class MorozovaSRunPerfTestConnectedComponents : public ppc::util::BaseRunPerfTes
     }
     int object_count = 0;
     int labeled_count = 0;
-    for (size_t i = 0; i < input_data_.size(); ++i) {
+    for (std::size_t i = 0; i < input_data_.size(); ++i) {
       if (i >= output_data.size()) {
         return false;
       }
-      for (size_t j = 0; j < input_data_[i].size(); ++j) {
+      for (std::size_t j = 0; j < input_data_[i].size(); ++j) {
         if (j >= output_data[i].size()) {
           return false;
         }

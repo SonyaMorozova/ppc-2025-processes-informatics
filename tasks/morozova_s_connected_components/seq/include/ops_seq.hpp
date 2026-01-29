@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>
+#include <vector>
+
 #include "morozova_s_connected_components/common/include/common.hpp"
 #include "task/include/task.hpp"
 
