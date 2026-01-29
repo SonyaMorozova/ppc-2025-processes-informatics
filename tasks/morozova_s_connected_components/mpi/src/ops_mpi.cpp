@@ -144,8 +144,8 @@ bool MorozovaSConnectedComponentsMPI::RunImpl() {
 bool MorozovaSConnectedComponentsMPI::PostProcessingImpl() {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int max_label = 0;
   if (rank == 0) {
-    int max_label = 0;
     for (const auto &row : GetOutput()) {
       for (int label : row) {
         if (label > max_label) {
