@@ -56,7 +56,9 @@ bool MorozovaSConnectedComponentsMPI::PreProcessingImpl() {
 
   return true;
 }
-std::pair<int, int> CalculateProcessBounds(int rows, int size, int process_rank) {
+
+std::pair<int, int> MorozovaSConnectedComponentsMPI::CalculateProcessBounds(int rows, int size,
+                                                                            int process_rank) const {
   int rows_per_process = rows / size;
   int remainder = rows % size;
   int start = process_rank * rows_per_process + std::min(process_rank, remainder);
