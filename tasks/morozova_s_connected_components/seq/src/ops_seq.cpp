@@ -36,7 +36,38 @@ bool MorozovaSConnectedComponentsSEQ::ValidationImpl() {
   return true;
 }
 
-std::vector<std::pair<int, int>> MorozovaSConnectedComponentsSEQ::GetNeighbors(int row, int col) {
+bool MorozovaSConnectedComponentsSEQ::PreProcessingImpl() {
+  const auto &input = GetInput();
+  rows_ = static_cast<int>(input.size());
+  cols_ = static_cast<int>(input[0].size());
+  grid_ = input;
+  visited_.assign(rows_, std::vector<bool>(cols_, false));
+  GetOutput() = std::vector<std::vector<int>>(rows_, std::vector<int>(cols_, 0));
+  return true;
+}
+
+void MorozovaSConnectedComponentsSEQ::DFSLabeling(int row, int col, int label) {
+  std::stack<std::pair<int, int>> stack;
+  stack.emplace(row, col);
+  visited_[row][col] = true;
+  GetOutput()[row][col] = label;
+  while (!stack.empty()) {
+    auto [current_row, current_col] = stack.top();
+    stack.pop();
+    auto neighbors = GetNeighbors(current_row, current_col);
+    for (const auto &neighbor : neighbors) {
+      int nr = neighbor.first;
+      int nc = neighbor.second;
+      if (!visited_[nr][nc]) {
+        visited_[nr][nc] = true;
+        GetOutput()[nr][nc] = label;
+        stack.emplace(nr, nc);
+      }
+    }
+  }
+}
+
+std::vector<std::pair<int, int>> MorozovaSConnectedComponentsSEQ::GetNeighbors(int row, int col) const {
   std::vector<std::pair<int, int>> neighbors;
   const std::array<int, 8> dr = {-1, -1, -1, 0, 0, 1, 1, 1};
   const std::array<int, 8> dc = {-1, 0, 1, -1, 1, -1, 0, 1};
@@ -48,6 +79,20 @@ std::vector<std::pair<int, int>> MorozovaSConnectedComponentsSEQ::GetNeighbors(i
     }
   }
   return neighbors;
+}
+
+bool MorozovaSConnectedComponentsSEQ::RunImpl() {
+  int label = 1;
+  for (int i = 0; i < rows_; ++i) {
+    for (int j = 0; j < cols_; ++j) {
+      if (grid_[i][j] == 1 && !visited_[i][j]) {
+        DFSLabeling(i, j, label);
+        ++label;
+      }
+    }
+  }
+
+  return true;
 }
 
 bool MorozovaSConnectedComponentsSEQ::PostProcessingImpl() {

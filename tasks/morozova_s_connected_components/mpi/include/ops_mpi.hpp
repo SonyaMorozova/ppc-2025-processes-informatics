@@ -23,15 +23,18 @@ class MorozovaSConnectedComponentsMPI : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  void BFSLabeling(int start_row, int start_col, int label);
-  std::vector<std::pair<int, int>> GetNeighbors(int row, int col);
-  void ExchangeBoundaryRows();
-  void MergeLabels(int label1, int label2);
-
+  void LabelLocalComponents();
+  void ProcessBoundaries();
+  std::pair<int, int> CalculateProcessBounds(int rows, int size, int process_rank) const;
+  std::vector<std::pair<int, int>> GetNeighbors(int row, int col) const;
   std::vector<std::vector<int>> grid_;
   std::vector<std::vector<bool>> visited_;
   int rows_;
   int cols_;
+  int rank_;
+  int size_;
+  int start_row_;
+  int end_row_;
 };
 
 }  // namespace morozova_s_connected_components
