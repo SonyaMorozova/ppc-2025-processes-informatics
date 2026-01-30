@@ -4,7 +4,6 @@
 #include <array>
 #include <cstddef>
 #include <stack>
-#include <utility>
 #include <vector>
 
 #include "morozova_s_connected_components/common/include/common.hpp"
@@ -51,10 +50,12 @@ void MorozovaSConnectedComponentsSEQ::DFSLabeling(int row, int col, int label) {
   stack.emplace(row, col);
   visited_[row][col] = true;
   GetOutput()[row][col] = label;
+
   while (!stack.empty()) {
     auto [current_row, current_col] = stack.top();
     stack.pop();
     auto neighbors = GetNeighbors(current_row, current_col);
+
     for (const auto &neighbor : neighbors) {
       int nr = neighbor.first;
       int nc = neighbor.second;
@@ -71,7 +72,7 @@ std::vector<std::pair<int, int>> MorozovaSConnectedComponentsSEQ::GetNeighbors(i
   std::vector<std::pair<int, int>> neighbors;
   const std::array<int, 8> dr = {-1, -1, -1, 0, 0, 1, 1, 1};
   const std::array<int, 8> dc = {-1, 0, 1, -1, 1, -1, 0, 1};
-  for (int i = 0; i < 8; ++i) {
+  for (size_t i = 0; i < 8; ++i) {
     int new_row = row + dr[i];
     int new_col = col + dc[i];
     if (new_row >= 0 && new_row < rows_ && new_col >= 0 && new_col < cols_ && grid_[new_row][new_col] == 1) {
@@ -91,7 +92,6 @@ bool MorozovaSConnectedComponentsSEQ::RunImpl() {
       }
     }
   }
-
   return true;
 }
 

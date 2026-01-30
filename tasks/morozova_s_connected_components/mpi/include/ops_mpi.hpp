@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -25,7 +23,7 @@ class MorozovaSConnectedComponentsMPI : public BaseTask {
 
   void LabelLocalComponents();
   void ProcessBoundaries();
-  std::pair<int, int> CalculateProcessBounds(int rows, int size, int process_rank) const;
+  static std::pair<int, int> CalculateProcessBounds(int rows, int size, int process_rank);
   std::vector<std::pair<int, int>> GetNeighbors(int row, int col) const;
   std::vector<std::vector<int>> grid_;
   std::vector<std::vector<bool>> visited_;
