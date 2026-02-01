@@ -87,6 +87,7 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
     std::sort(labels.begin(), labels.end());
     auto it = std::unique(labels.begin(), labels.end());
     labels.erase(it, labels.end());
+
     if (!labels.empty()) {
       if (labels[0] != 1) {
         return false;

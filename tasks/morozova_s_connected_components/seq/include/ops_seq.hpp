@@ -24,7 +24,7 @@ class MorozovaSConnectedComponentsSEQ : public BaseTask {
   std::vector<std::pair<int, int>> GetNeighbors(int row, int col) const;
   std::vector<std::vector<int>> grid_;
   std::vector<std::vector<bool>> visited_;
-  int rows_;
-  int cols_;
+  int rows_{0};
+  int cols_{0};
 };
 }  // namespace morozova_s_connected_components

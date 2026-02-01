@@ -4,13 +4,15 @@
 #include <array>
 #include <cstddef>
 #include <stack>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "morozova_s_connected_components/common/include/common.hpp"
 
 namespace morozova_s_connected_components {
 
-MorozovaSConnectedComponentsSEQ::MorozovaSConnectedComponentsSEQ(const InType &in) : rows_(0), cols_(0) {
+MorozovaSConnectedComponentsSEQ::MorozovaSConnectedComponentsSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
   GetOutput() = {};
@@ -72,6 +74,7 @@ std::vector<std::pair<int, int>> MorozovaSConnectedComponentsSEQ::GetNeighbors(i
   std::vector<std::pair<int, int>> neighbors;
   const std::array<int, 8> dr = {-1, -1, -1, 0, 0, 1, 1, 1};
   const std::array<int, 8> dc = {-1, 0, 1, -1, 1, -1, 0, 1};
+
   for (size_t i = 0; i < 8; ++i) {
     int new_row = row + dr[i];
     int new_col = col + dc[i];

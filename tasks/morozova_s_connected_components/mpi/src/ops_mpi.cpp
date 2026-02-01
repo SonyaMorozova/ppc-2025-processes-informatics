@@ -6,14 +6,15 @@
 #include <array>
 #include <cstddef>
 #include <queue>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "morozova_s_connected_components/common/include/common.hpp"
 
 namespace morozova_s_connected_components {
 
-MorozovaSConnectedComponentsMPI::MorozovaSConnectedComponentsMPI(const InType &in)
-    : rows_(0), cols_(0), rank_(0), size_(0), start_row_(0), end_row_(0) {
+MorozovaSConnectedComponentsMPI::MorozovaSConnectedComponentsMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
   GetOutput() = {};
@@ -51,7 +52,6 @@ bool MorozovaSConnectedComponentsMPI::PreProcessingImpl() {
   grid_ = input;
   visited_.assign(rows_, std::vector<bool>(cols_, false));
   GetOutput() = std::vector<std::vector<int>>(rows_, std::vector<int>(cols_, 0));
-
   return true;
 }
 
@@ -80,22 +80,18 @@ std::vector<std::pair<int, int>> MorozovaSConnectedComponentsMPI::GetNeighbors(i
 void MorozovaSConnectedComponentsMPI::LabelLocalComponents() {
   int label_offset = rank_ * 1000000;
   int current_label = label_offset + 1;
-
   for (int i = start_row_; i < end_row_; ++i) {
     for (int j = 0; j < cols_; ++j) {
       if (grid_[i][j] != 1 || visited_[i][j]) {
         continue;
       }
-
       std::queue<std::pair<int, int>> q;
       q.emplace(i, j);
       visited_[i][j] = true;
       GetOutput()[i][j] = current_label;
-
       while (!q.empty()) {
         auto [row, col] = q.front();
         q.pop();
-
         auto neighbors = GetNeighbors(row, col);
         for (const auto &neighbor : neighbors) {
           int nr = neighbor.first;
@@ -113,6 +109,40 @@ void MorozovaSConnectedComponentsMPI::LabelLocalComponents() {
   }
 }
 
+void MorozovaSConnectedComponentsMPI::MergeGlobalLabels() {
+  std::vector<std::vector<bool>> global_visited(rows_, std::vector<bool>(cols_, false));
+  std::vector<std::vector<int>> new_labels(rows_, std::vector<int>(cols_, 0));
+  int global_label = 1;
+  for (int i = 0; i < rows_; ++i) {
+    for (int j = 0; j < cols_; ++j) {
+      if (grid_[i][j] != 1 || global_visited[i][j]) {
+        continue;
+      }
+      std::queue<std::pair<int, int>> q;
+      q.emplace(i, j);
+      global_visited[i][j] = true;
+      new_labels[i][j] = global_label;
+      while (!q.empty()) {
+        auto [row, col] = q.front();
+        q.pop();
+        auto neighbors = GetNeighbors(row, col);
+        for (const auto &neighbor : neighbors) {
+          int nr = neighbor.first;
+          int nc = neighbor.second;
+
+          if (!global_visited[nr][nc]) {
+            global_visited[nr][nc] = true;
+            new_labels[nr][nc] = global_label;
+            q.emplace(nr, nc);
+          }
+        }
+      }
+      ++global_label;
+    }
+  }
+  GetOutput() = std::move(new_labels);
+}
+
 void MorozovaSConnectedComponentsMPI::ProcessBoundaries() {
   if (rank_ == 0) {
     for (int src = 1; src < size_; ++src) {
@@ -126,49 +156,11 @@ void MorozovaSConnectedComponentsMPI::ProcessBoundaries() {
       MPI_Send(GetOutput()[i].data(), cols_, MPI_INT, 0, 0, MPI_COMM_WORLD);
     }
   }
-
   MPI_Barrier(MPI_COMM_WORLD);
-
   if (rank_ == 0) {
-    std::vector<std::vector<bool>> global_visited(rows_, std::vector<bool>(cols_, false));
-    std::vector<std::vector<int>> new_labels(rows_, std::vector<int>(cols_, 0));
-    int global_label = 1;
-
-    for (int i = 0; i < rows_; ++i) {
-      for (int j = 0; j < cols_; ++j) {
-        if (grid_[i][j] != 1 || global_visited[i][j]) {
-          continue;
-        }
-
-        std::queue<std::pair<int, int>> q;
-        q.emplace(i, j);
-        global_visited[i][j] = true;
-        new_labels[i][j] = global_label;
-
-        while (!q.empty()) {
-          auto [row, col] = q.front();
-          q.pop();
-
-          auto neighbors = GetNeighbors(row, col);
-          for (const auto &neighbor : neighbors) {
-            int nr = neighbor.first;
-            int nc = neighbor.second;
-
-            if (!global_visited[nr][nc]) {
-              global_visited[nr][nc] = true;
-              new_labels[nr][nc] = global_label;
-              q.emplace(nr, nc);
-            }
-          }
-        }
-        ++global_label;
-      }
-    }
-    GetOutput() = std::move(new_labels);
+    MergeGlobalLabels();
   }
-
   MPI_Barrier(MPI_COMM_WORLD);
-
   if (rank_ == 0) {
     for (int dest = 1; dest < size_; ++dest) {
       auto [dest_start, dest_end] = CalculateProcessBounds(rows_, size_, dest);
@@ -193,7 +185,6 @@ bool MorozovaSConnectedComponentsMPI::PostProcessingImpl() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   int max_label = 0;
-
   if (rank == 0) {
     for (const auto &row : GetOutput()) {
       for (int label : row) {
@@ -203,14 +194,11 @@ bool MorozovaSConnectedComponentsMPI::PostProcessingImpl() {
     auto &output = GetOutput();
     output.push_back({max_label});
   }
-
   MPI_Bcast(&max_label, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
   if (rank != 0) {
     auto &output = GetOutput();
     output.push_back({max_label});
   }
-
   return true;
 }
 
