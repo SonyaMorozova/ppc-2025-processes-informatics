@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "morozova_s_connected_components/common/include/common.hpp"
@@ -97,7 +98,7 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
           return false;
         }
       }
-      if (reported_max_label != static_cast<int>(labels.size())) {
+      if (std::cmp_not_equal(reported_max_label, labels.size())) {
         return false;
       }
     } else if (reported_max_label != 0) {
