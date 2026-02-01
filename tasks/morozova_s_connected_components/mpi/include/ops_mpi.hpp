@@ -25,7 +25,7 @@ class MorozovaSConnectedComponentsMPI : public BaseTask {
   void ProcessBoundaries();
   void MergeGlobalLabels();
   static std::pair<int, int> CalculateProcessBounds(int rows, int size, int process_rank);
-  std::vector<std::pair<int, int>> GetNeighbors(int row, int col) const;
+  [[nodiscard]] std::vector<std::pair<int, int>> GetNeighbors(int row, int col) const;
   std::vector<std::vector<int>> grid_;
   std::vector<std::vector<bool>> visited_;
   int rows_{0};

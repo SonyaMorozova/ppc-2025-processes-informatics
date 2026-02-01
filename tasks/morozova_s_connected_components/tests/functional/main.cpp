@@ -84,8 +84,8 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
         }
       }
     }
-    std::sort(labels.begin(), labels.end());
-    auto it = std::unique(labels.begin(), labels.end());
+    std::ranges::sort(labels);
+    auto it = std::ranges::unique(labels).begin();
     labels.erase(it, labels.end());
 
     if (!labels.empty()) {

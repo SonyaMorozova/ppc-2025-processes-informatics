@@ -6,7 +6,6 @@
 #include <array>
 #include <cstddef>
 #include <queue>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -65,8 +64,8 @@ std::pair<int, int> MorozovaSConnectedComponentsMPI::CalculateProcessBounds(int 
 
 std::vector<std::pair<int, int>> MorozovaSConnectedComponentsMPI::GetNeighbors(int row, int col) const {
   std::vector<std::pair<int, int>> neighbors;
-  const std::array<int, 8> dr = {-1, -1, -1, 0, 0, 1, 1, 1};
-  const std::array<int, 8> dc = {-1, 0, 1, -1, 1, -1, 0, 1};
+  constexpr std::array<int, 8> dr = {-1, -1, -1, 0, 0, 1, 1, 1};
+  constexpr std::array<int, 8> dc = {-1, 0, 1, -1, 1, -1, 0, 1};
   for (size_t i = 0; i < 8; ++i) {
     int new_row = row + dr[i];
     int new_col = col + dc[i];
@@ -96,7 +95,6 @@ void MorozovaSConnectedComponentsMPI::LabelLocalComponents() {
         for (const auto &neighbor : neighbors) {
           int nr = neighbor.first;
           int nc = neighbor.second;
-
           if (nr >= start_row_ && nr < end_row_ && !visited_[nr][nc]) {
             visited_[nr][nc] = true;
             GetOutput()[nr][nc] = current_label;

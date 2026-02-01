@@ -4,7 +4,6 @@
 #include <array>
 #include <cstddef>
 #include <stack>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -52,12 +51,10 @@ void MorozovaSConnectedComponentsSEQ::DFSLabeling(int row, int col, int label) {
   stack.emplace(row, col);
   visited_[row][col] = true;
   GetOutput()[row][col] = label;
-
   while (!stack.empty()) {
     auto [current_row, current_col] = stack.top();
     stack.pop();
     auto neighbors = GetNeighbors(current_row, current_col);
-
     for (const auto &neighbor : neighbors) {
       int nr = neighbor.first;
       int nc = neighbor.second;
@@ -72,9 +69,8 @@ void MorozovaSConnectedComponentsSEQ::DFSLabeling(int row, int col, int label) {
 
 std::vector<std::pair<int, int>> MorozovaSConnectedComponentsSEQ::GetNeighbors(int row, int col) const {
   std::vector<std::pair<int, int>> neighbors;
-  const std::array<int, 8> dr = {-1, -1, -1, 0, 0, 1, 1, 1};
-  const std::array<int, 8> dc = {-1, 0, 1, -1, 1, -1, 0, 1};
-
+  constexpr std::array<int, 8> dr = {-1, -1, -1, 0, 0, 1, 1, 1};
+  constexpr std::array<int, 8> dc = {-1, 0, 1, -1, 1, -1, 0, 1};
   for (size_t i = 0; i < 8; ++i) {
     int new_row = row + dr[i];
     int new_col = col + dc[i];
