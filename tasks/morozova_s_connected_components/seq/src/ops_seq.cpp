@@ -1,7 +1,6 @@
 #include "morozova_s_connected_components/seq/include/ops_seq.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <stack>
 #include <utility>
@@ -69,11 +68,11 @@ void MorozovaSConnectedComponentsSEQ::DFSLabeling(int row, int col, int label) {
 
 std::vector<std::pair<int, int>> MorozovaSConnectedComponentsSEQ::GetNeighbors(int row, int col) const {
   std::vector<std::pair<int, int>> neighbors;
-  constexpr std::array<int, 8> kDr = {-1, -1, -1, 0, 0, 1, 1, 1};
-  constexpr std::array<int, 8> kDc = {-1, 0, 1, -1, 1, -1, 0, 1};
-  for (size_t i = 0; i < 8; ++i) {
-    int new_row = row + kDr[i];
-    int new_col = col + kDc[i];
+  const int dr[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+  const int dc[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+  for (int i = 0; i < 8; ++i) {
+    int new_row = row + dr[i];
+    int new_col = col + dc[i];
     if (new_row >= 0 && new_row < rows_ && new_col >= 0 && new_col < cols_ && grid_[new_row][new_col] == 1) {
       neighbors.emplace_back(new_row, new_col);
     }
@@ -97,8 +96,10 @@ bool MorozovaSConnectedComponentsSEQ::RunImpl() {
 bool MorozovaSConnectedComponentsSEQ::PostProcessingImpl() {
   int max_label = 0;
   for (const auto &row : GetOutput()) {
-    for (int label : row) {
-      max_label = std::max(label, max_label);
+    for (int label_val : row) {
+      if (label_val > max_label) {
+        max_label = label_val;
+      }
     }
   }
   auto &output = GetOutput();

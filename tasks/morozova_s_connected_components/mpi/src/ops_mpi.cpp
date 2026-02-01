@@ -3,7 +3,6 @@
 #include <mpi.h>
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <queue>
 #include <utility>
@@ -64,11 +63,11 @@ std::pair<int, int> MorozovaSConnectedComponentsMPI::CalculateProcessBounds(int 
 
 std::vector<std::pair<int, int>> MorozovaSConnectedComponentsMPI::GetNeighbors(int row, int col) const {
   std::vector<std::pair<int, int>> neighbors;
-  constexpr std::array<int, 8> kDr = {-1, -1, -1, 0, 0, 1, 1, 1};
-  constexpr std::array<int, 8> kDc = {-1, 0, 1, -1, 1, -1, 0, 1};
-  for (size_t i = 0; i < 8; ++i) {
-    int new_row = row + kDr[i];
-    int new_col = col + kDc[i];
+  const int dr[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+  const int dc[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+  for (int i = 0; i < 8; ++i) {
+    int new_row = row + dr[i];
+    int new_col = col + dc[i];
     if (new_row >= 0 && new_row < rows_ && new_col >= 0 && new_col < cols_ && grid_[new_row][new_col] == 1) {
       neighbors.emplace_back(new_row, new_col);
     }
@@ -95,7 +94,6 @@ void MorozovaSConnectedComponentsMPI::LabelLocalComponents() {
         for (const auto &neighbor : neighbors) {
           int nr = neighbor.first;
           int nc = neighbor.second;
-
           if (nr >= start_row_ && nr < end_row_ && !visited_[nr][nc]) {
             visited_[nr][nc] = true;
             GetOutput()[nr][nc] = current_label;
@@ -186,7 +184,9 @@ bool MorozovaSConnectedComponentsMPI::PostProcessingImpl() {
   if (rank == 0) {
     for (const auto &row : GetOutput()) {
       for (int label : row) {
-        max_label = std::max(label, max_label);
+        if (label > max_label) {
+          max_label = label;
+        }
       }
     }
     auto &output = GetOutput();
