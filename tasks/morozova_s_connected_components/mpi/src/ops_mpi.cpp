@@ -93,12 +93,54 @@ void MorozovaSConnectedComponentsMPI::RunLabeling() {
 }
 
 bool MorozovaSConnectedComponentsMPI::RunImpl() {
-  int rank = 0;
+  int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  if (rank == 0) {
-    RunLabeling();
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  int rows_per_proc = rows_ / size;
+  int remainder = rows_ % size;
+  int start_row = rank * rows_per_proc + std::min(rank, remainder);
+  int end_row = start_row + rows_per_proc + (rank < remainder ? 1 : 0);
+  int local_label = 1;
+  std::vector<int> local_labels;
+  for (int i = start_row; i < end_row; ++i) {
+    for (int j = 0; j < cols_; ++j) {
+      if (grid_[i][j] == 1 && !visited_[i][j]) {
+        FloodFill(i, j, local_label);
+        local_labels.push_back(local_label);
+        ++local_label;
+      }
+    }
   }
-  MPI_Bcast(GetOutput().data()->data(), rows_ * cols_, MPI_INT, 0, MPI_COMM_WORLD);
+  if (rank == 0) {
+    for (int proc = 1; proc < size; ++proc) {
+      int proc_start_row = proc * rows_per_proc + std::min(proc, remainder);
+      int proc_end_row = proc_start_row + rows_per_proc + (proc < remainder ? 1 : 0);
+      int proc_rows = proc_end_row - proc_start_row;
+      std::vector<int> recv_buffer(proc_rows * cols_);
+      MPI_Recv(recv_buffer.data(), proc_rows * cols_, MPI_INT, proc, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      for (int i = 0; i < proc_rows; ++i) {
+        for (int j = 0; j < cols_; ++j) {
+          GetOutput()[proc_start_row + i][j] = recv_buffer[i * cols_ + j];
+        }
+      }
+    }
+  } else {
+    int local_rows = end_row - start_row;
+    std::vector<int> send_buffer(local_rows * cols_);
+    for (int i = 0; i < local_rows; ++i) {
+      for (int j = 0; j < cols_; ++j) {
+        send_buffer[i * cols_ + j] = GetOutput()[start_row + i][j];
+      }
+    }
+    MPI_Send(send_buffer.data(), local_rows * cols_, MPI_INT, 0, 0, MPI_COMM_WORLD);
+  }
+  if (rank == 0) {
+    for (int proc = 1; proc < size; ++proc) {
+      MPI_Send(GetOutput().data()->data(), rows_ * cols_, MPI_INT, proc, 1, MPI_COMM_WORLD);
+    }
+  } else {
+    MPI_Recv(GetOutput().data()->data(), rows_ * cols_, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  }
   return true;
 }
 
