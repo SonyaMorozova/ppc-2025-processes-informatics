@@ -6,6 +6,7 @@
 #include <array>
 #include <cstddef>
 #include <queue>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -22,7 +23,7 @@ MorozovaSConnectedComponentsMPI::MorozovaSConnectedComponentsMPI(const InType &i
 bool MorozovaSConnectedComponentsMPI::ValidationImpl() {
   const auto &input = GetInput();
   if (input.empty()) {
-    return false;
+    return true;
   }
   const std::size_t cols = input[0].size();
   for (const auto &row : input) {
@@ -80,18 +81,6 @@ void MorozovaSConnectedComponentsMPI::FloodFill(int row, int col, int label) {
   }
 }
 
-void MorozovaSConnectedComponentsMPI::RunLabeling() {
-  int label = 1;
-  for (int i = 0; i < rows_; ++i) {
-    for (int j = 0; j < cols_; ++j) {
-      if (grid_[i][j] == 1 && !visited_[i][j]) {
-        FloodFill(i, j, label);
-        ++label;
-      }
-    }
-  }
-}
-
 bool MorozovaSConnectedComponentsMPI::RunImpl() {
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -100,14 +89,13 @@ bool MorozovaSConnectedComponentsMPI::RunImpl() {
   int remainder = rows_ % size;
   int start_row = rank * rows_per_proc + std::min(rank, remainder);
   int end_row = start_row + rows_per_proc + (rank < remainder ? 1 : 0);
+  int base_label = rank * 1000000;
   int local_label = 1;
-  std::vector<int> local_labels;
   for (int i = start_row; i < end_row; ++i) {
     for (int j = 0; j < cols_; ++j) {
       if (grid_[i][j] == 1 && !visited_[i][j]) {
-        FloodFill(i, j, local_label);
-        local_labels.push_back(local_label);
-        ++local_label;
+        FloodFill(i, j, base_label + local_label);
+        local_label++;
       }
     }
   }
@@ -124,6 +112,94 @@ bool MorozovaSConnectedComponentsMPI::RunImpl() {
         }
       }
     }
+    std::unordered_map<int, int> label_map;
+    int next_label = 1;
+    for (int proc = 1; proc < size; ++proc) {
+      int boundary_row = proc * rows_per_proc + std::min(proc, remainder);
+      if (boundary_row > 0 && boundary_row < rows_) {
+        for (int j = 0; j < cols_; ++j) {
+          if (grid_[boundary_row - 1][j] == 1 && grid_[boundary_row][j] == 1) {
+            int upper_label = GetOutput()[boundary_row - 1][j];
+            int lower_label = GetOutput()[boundary_row][j];
+            if (upper_label != lower_label) {
+              int root_upper = upper_label;
+              while (label_map.find(root_upper) != label_map.end()) {
+                root_upper = label_map[root_upper];
+              }
+              int root_lower = lower_label;
+              while (label_map.find(root_lower) != label_map.end()) {
+                root_lower = label_map[root_lower];
+              }
+              if (root_upper != root_lower) {
+                int min_label = std::min(root_upper, root_lower);
+                int max_label = std::max(root_upper, root_lower);
+                label_map[max_label] = min_label;
+              }
+            }
+          }
+        }
+        for (int j = 0; j < cols_; ++j) {
+          if (grid_[boundary_row - 1][j] == 1) {
+            for (int dj = -1; dj <= 1; ++dj) {
+              int nj = j + dj;
+              if (nj >= 0 && nj < cols_ && grid_[boundary_row][nj] == 1) {
+                int upper_label = GetOutput()[boundary_row - 1][j];
+                int lower_label = GetOutput()[boundary_row][nj];
+                if (upper_label != lower_label) {
+                  int root_upper = upper_label;
+                  while (label_map.find(root_upper) != label_map.end()) {
+                    root_upper = label_map[root_upper];
+                  }
+                  int root_lower = lower_label;
+                  while (label_map.find(root_lower) != label_map.end()) {
+                    root_lower = label_map[root_lower];
+                  }
+                  if (root_upper != root_lower) {
+                    int min_label = std::min(root_upper, root_lower);
+                    int max_label = std::max(root_upper, root_lower);
+                    label_map[max_label] = min_label;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    for (int i = 0; i < rows_; ++i) {
+      for (int j = 0; j < cols_; ++j) {
+        if (GetOutput()[i][j] > 0) {
+          int label = GetOutput()[i][j];
+          while (label_map.find(label) != label_map.end()) {
+            label = label_map[label];
+          }
+          GetOutput()[i][j] = label;
+        }
+      }
+    }
+    std::unordered_map<int, int> final_label_map;
+    int current_label = 1;
+    for (int i = 0; i < rows_; ++i) {
+      for (int j = 0; j < cols_; ++j) {
+        if (GetOutput()[i][j] > 0) {
+          int old_label = GetOutput()[i][j];
+          if (final_label_map.find(old_label) == final_label_map.end()) {
+            final_label_map[old_label] = current_label++;
+          }
+          GetOutput()[i][j] = final_label_map[old_label];
+        }
+      }
+    }
+    std::vector<int> send_buffer(rows_ * cols_);
+    for (int i = 0; i < rows_; ++i) {
+      for (int j = 0; j < cols_; ++j) {
+        send_buffer[i * cols_ + j] = GetOutput()[i][j];
+      }
+    }
+
+    for (int proc = 1; proc < size; ++proc) {
+      MPI_Send(send_buffer.data(), rows_ * cols_, MPI_INT, proc, 1, MPI_COMM_WORLD);
+    }
   } else {
     int local_rows = end_row - start_row;
     std::vector<int> send_buffer(local_rows * cols_);
@@ -133,14 +209,15 @@ bool MorozovaSConnectedComponentsMPI::RunImpl() {
       }
     }
     MPI_Send(send_buffer.data(), local_rows * cols_, MPI_INT, 0, 0, MPI_COMM_WORLD);
-  }
-  if (rank == 0) {
-    for (int proc = 1; proc < size; ++proc) {
-      MPI_Send(GetOutput().data()->data(), rows_ * cols_, MPI_INT, proc, 1, MPI_COMM_WORLD);
+    std::vector<int> recv_buffer(rows_ * cols_);
+    MPI_Recv(recv_buffer.data(), rows_ * cols_, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    for (int i = 0; i < rows_; ++i) {
+      for (int j = 0; j < cols_; ++j) {
+        GetOutput()[i][j] = recv_buffer[i * cols_ + j];
+      }
     }
-  } else {
-    MPI_Recv(GetOutput().data()->data(), rows_ * cols_, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   }
+
   return true;
 }
 
@@ -148,7 +225,9 @@ bool MorozovaSConnectedComponentsMPI::PostProcessingImpl() {
   int max_label = 0;
   for (const auto &row : GetOutput()) {
     for (int v : row) {
-      max_label = std::max(max_label, v);
+      if (v > max_label) {
+        max_label = v;
+      }
     }
   }
   GetOutput().push_back({max_label});

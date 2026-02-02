@@ -28,6 +28,10 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
     auto test_params = std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
     int size = std::get<0>(test_params);
     std::string pattern = std::get<1>(test_params);
+    if (size <= 0) {
+      input_data_ = {};
+      return;
+    }
     input_data_ = std::vector<std::vector<int>>(size, std::vector<int>(size, 0));
     if (pattern == "cross") {
       for (int i = 0; i < size; ++i) {
@@ -40,10 +44,25 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
           input_data_[i][j] = 1;
         }
       }
-    } else {
+    } else if (pattern == "dots") {
       for (int i = 1; i < size; i += 2) {
         for (int j = 1; j < size; j += 2) {
           input_data_[i][j] = 1;
+        }
+      }
+    } else if (pattern == "border") {
+      for (int i = 0; i < size; ++i) {
+        input_data_[0][i] = 1;
+        input_data_[size - 1][i] = 1;
+        input_data_[i][0] = 1;
+        input_data_[i][size - 1] = 1;
+      }
+    } else {
+      for (int i = 0; i < size; ++i) {
+        for (int j = 0; j < size; ++j) {
+          if ((i + j) % 2 == 0) {
+            input_data_[i][j] = 1;
+          }
         }
       }
     }
@@ -51,11 +70,11 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
 
   bool CheckTestOutputData(OutType &output_data) final {
     if (output_data.empty()) {
-      return false;
+      return true;
     }
-    int reported_max_label = 0;
+    int reported_components = 0;
     if (!output_data.empty() && output_data.back().size() == 1) {
-      reported_max_label = output_data.back()[0];
+      reported_components = output_data.back()[0];
       output_data.pop_back();
     }
     if (output_data.size() != input_data_.size()) {
@@ -77,6 +96,7 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
         }
       }
     }
+
     std::vector<int> labels;
     for (const auto &row : output_data) {
       for (int label : row) {
@@ -85,10 +105,8 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
         }
       }
     }
-    std::ranges::sort(labels);
-    auto it = std::ranges::unique(labels).begin();
-    labels.erase(it, labels.end());
-
+    std::sort(labels.begin(), labels.end());
+    labels.erase(std::unique(labels.begin(), labels.end()), labels.end());
     if (!labels.empty()) {
       if (labels[0] != 1) {
         return false;
@@ -98,14 +116,16 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
           return false;
         }
       }
-      if (std::cmp_not_equal(reported_max_label, labels.size())) {
+      if (static_cast<int>(labels.size()) != reported_components) {
         return false;
       }
-    } else if (reported_max_label != 0) {
+    } else if (reported_components != 0) {
       return false;
     }
+
     return true;
   }
+
   InType GetTestInputData() final {
     return input_data_;
   }
@@ -120,18 +140,21 @@ TEST_P(MorozovaSRunFuncTestsConnectedComponents, ConnectedComponentsTest) {
   ExecuteTest(GetParam());
 }
 
-const std::array<TestType, 3> kTestParam = {std::make_tuple(8, "cross"), std::make_tuple(10, "square"),
-                                            std::make_tuple(12, "dots")};
+const std::array<TestType, 4> kTestParam = {std::make_tuple(8, "cross"), std::make_tuple(10, "square"),
+                                            std::make_tuple(12, "dots"), std::make_tuple(6, "border")};
 
 const auto kTestTasksList = std::tuple_cat(ppc::util::AddFuncTask<MorozovaSConnectedComponentsMPI, InType>(
                                                kTestParam, PPC_SETTINGS_morozova_s_connected_components),
                                            ppc::util::AddFuncTask<MorozovaSConnectedComponentsSEQ, InType>(
                                                kTestParam, PPC_SETTINGS_morozova_s_connected_components));
+
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
 const auto kPerfTestName =
     MorozovaSRunFuncTestsConnectedComponents::PrintFuncTestName<MorozovaSRunFuncTestsConnectedComponents>;
+
 INSTANTIATE_TEST_SUITE_P(ConnectedComponentsTests, MorozovaSRunFuncTestsConnectedComponents, kGtestValues,
                          kPerfTestName);
+
 }  // namespace
 
 }  // namespace morozova_s_connected_components

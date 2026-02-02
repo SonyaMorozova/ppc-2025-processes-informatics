@@ -37,14 +37,19 @@ MorozovaSConnectedComponentsSEQ::MorozovaSConnectedComponentsSEQ(const InType &i
 bool MorozovaSConnectedComponentsSEQ::ValidationImpl() {
   const auto &input = GetInput();
   if (input.empty()) {
-    return false;
+    return true;
   }
   const std::size_t cols = input.front().size();
   return std::all_of(input.begin(), input.end(), [cols](const std::vector<int> &row) { return row.size() == cols; });
 }
+
 bool MorozovaSConnectedComponentsSEQ::PreProcessingImpl() {
   grid_ = GetInput();
   rows_ = static_cast<int>(grid_.size());
+  if (rows_ == 0) {
+    cols_ = 0;
+    return true;
+  }
   cols_ = static_cast<int>(grid_.front().size());
   visited_.assign(rows_, std::vector<bool>(cols_, false));
   GetOutput().assign(rows_, std::vector<int>(cols_, 0));
@@ -87,6 +92,15 @@ bool MorozovaSConnectedComponentsSEQ::RunImpl() {
 }
 
 bool MorozovaSConnectedComponentsSEQ::PostProcessingImpl() {
+  int max_label = 0;
+  for (const auto &row : GetOutput()) {
+    for (int v : row) {
+      if (v > max_label) {
+        max_label = v;
+      }
+    }
+  }
+  GetOutput().push_back({max_label});
   return true;
 }
 

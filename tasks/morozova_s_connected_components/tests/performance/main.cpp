@@ -42,6 +42,12 @@ class MorozovaSRunPerfTestConnectedComponents : public ppc::util::BaseRunPerfTes
     if (output_data.empty()) {
       return false;
     }
+    if (!output_data.empty() && output_data.back().size() == 1) {
+      output_data.pop_back();
+    }
+    if (output_data.empty()) {
+      return false;
+    }
     int object_count = 0;
     int labeled_count = 0;
     for (std::size_t i = 0; i < input_data_.size(); ++i) {
@@ -75,7 +81,6 @@ class MorozovaSRunPerfTestConnectedComponents : public ppc::util::BaseRunPerfTes
 TEST_P(MorozovaSRunPerfTestConnectedComponents, RunPerfModes) {
   ExecuteTest(GetParam());
 }
-
 const auto kAllPerfTasks =
     ppc::util::MakeAllPerfTasks<InType, MorozovaSConnectedComponentsMPI, MorozovaSConnectedComponentsSEQ>(
         PPC_SETTINGS_morozova_s_connected_components);

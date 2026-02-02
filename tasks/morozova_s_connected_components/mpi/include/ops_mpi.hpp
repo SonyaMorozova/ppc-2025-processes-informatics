@@ -22,7 +22,6 @@ class MorozovaSConnectedComponentsMPI : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  void RunLabeling();
   void FloodFill(int row, int col, int label);
   [[nodiscard]] std::vector<std::pair<int, int>> GetNeighbors(int row, int col) const;
 
