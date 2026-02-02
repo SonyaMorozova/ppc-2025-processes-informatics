@@ -3,8 +3,10 @@
 #include <mpi.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <queue>
+#include <utility>
 #include <vector>
 
 #include "morozova_s_connected_components/common/include/common.hpp"
@@ -48,9 +50,9 @@ bool MorozovaSConnectedComponentsMPI::PreProcessingImpl() {
 
 std::vector<std::pair<int, int>> MorozovaSConnectedComponentsMPI::GetNeighbors(int row, int col) const {
   std::vector<std::pair<int, int>> neighbors;
-  const int dr[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
-  const int dc[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
-  for (int k = 0; k < 8; ++k) {
+  const std::array<int, 8> dr = {-1, -1, -1, 0, 0, 1, 1, 1};
+  const std::array<int, 8> dc = {-1, 0, 1, -1, 1, -1, 0, 1};
+  for (std::size_t k = 0; k < dr.size(); ++k) {
     const int nr = row + dr[k];
     const int nc = col + dc[k];
     if (nr >= 0 && nr < rows_ && nc >= 0 && nc < cols_ && grid_[nr][nc] == 1) {
