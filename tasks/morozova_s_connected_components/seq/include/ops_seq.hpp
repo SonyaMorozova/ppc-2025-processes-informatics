@@ -20,6 +20,7 @@ class MorozovaSConnectedComponentsSEQ : public BaseTask {
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
+  void LabelComponents();
   void DFSLabeling(int row, int col, int label);
   [[nodiscard]] std::vector<std::pair<int, int>> GetNeighbors(int row, int col) const;
   std::vector<std::vector<int>> grid_;
