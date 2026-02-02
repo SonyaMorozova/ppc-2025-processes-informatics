@@ -3,8 +3,11 @@
 #include <mpi.h>
 
 #include <algorithm>
-#include <array>
+#include <cstddef>
 #include <queue>
+#include <vector>
+
+#include "morozova_s_connected_components/common/include/common.hpp"
 
 namespace morozova_s_connected_components {
 
@@ -43,44 +46,46 @@ bool MorozovaSConnectedComponentsMPI::PreProcessingImpl() {
   return true;
 }
 
-std::vector<std::pair<int, int>> MorozovaSConnectedComponentsMPI::GetNeighbors(int r, int c) const {
-  std::vector<std::pair<int, int>> n;
-  constexpr std::array<int, 8> dr{-1, -1, -1, 0, 0, 1, 1, 1};
-  constexpr std::array<int, 8> dc{-1, 0, 1, -1, 1, -1, 0, 1};
-  for (std::size_t i = 0; i < 8; ++i) {
-    const int nr = r + dr[i];
-    const int nc = c + dc[i];
+std::vector<std::pair<int, int>> MorozovaSConnectedComponentsMPI::GetNeighbors(int row, int col) const {
+  std::vector<std::pair<int, int>> neighbors;
+  const int dr[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+  const int dc[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+  for (int k = 0; k < 8; ++k) {
+    const int nr = row + dr[k];
+    const int nc = col + dc[k];
     if (nr >= 0 && nr < rows_ && nc >= 0 && nc < cols_ && grid_[nr][nc] == 1) {
-      n.emplace_back(nr, nc);
+      neighbors.emplace_back(nr, nc);
     }
   }
-  return n;
+  return neighbors;
 }
 
-void MorozovaSConnectedComponentsMPI::LabelComponentsSEQ() {
+void MorozovaSConnectedComponentsMPI::FloodFill(int row, int col, int label) {
+  std::queue<std::pair<int, int>> q;
+  q.emplace(row, col);
+  visited_[row][col] = true;
+  GetOutput()[row][col] = label;
+  while (!q.empty()) {
+    const auto [r, c] = q.front();
+    q.pop();
+    for (const auto &[nr, nc] : GetNeighbors(r, c)) {
+      if (!visited_[nr][nc]) {
+        visited_[nr][nc] = true;
+        GetOutput()[nr][nc] = label;
+        q.emplace(nr, nc);
+      }
+    }
+  }
+}
+
+void MorozovaSConnectedComponentsMPI::RunLabeling() {
   int label = 1;
   for (int i = 0; i < rows_; ++i) {
     for (int j = 0; j < cols_; ++j) {
-      if (grid_[i][j] != 1 || visited_[i][j]) {
-        continue;
+      if (grid_[i][j] == 1 && !visited_[i][j]) {
+        FloodFill(i, j, label);
+        ++label;
       }
-      std::queue<std::pair<int, int>> q;
-      q.emplace(i, j);
-      visited_[i][j] = true;
-      GetOutput()[i][j] = label;
-
-      while (!q.empty()) {
-        const auto [r, c] = q.front();
-        q.pop();
-        for (const auto &[nr, nc] : GetNeighbors(r, c)) {
-          if (!visited_[nr][nc]) {
-            visited_[nr][nc] = true;
-            GetOutput()[nr][nc] = label;
-            q.emplace(nr, nc);
-          }
-        }
-      }
-      ++label;
     }
   }
 }
@@ -88,11 +93,9 @@ void MorozovaSConnectedComponentsMPI::LabelComponentsSEQ() {
 bool MorozovaSConnectedComponentsMPI::RunImpl() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
   if (rank == 0) {
-    LabelComponentsSEQ();
+    RunLabeling();
   }
-
   MPI_Bcast(GetOutput().data()->data(), rows_ * cols_, MPI_INT, 0, MPI_COMM_WORLD);
   return true;
 }

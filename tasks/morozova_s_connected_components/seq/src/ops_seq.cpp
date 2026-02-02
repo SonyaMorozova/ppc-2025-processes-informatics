@@ -1,9 +1,6 @@
 #include "morozova_s_connected_components/seq/include/ops_seq.hpp"
 
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <stack>
+#include <queue>
 #include <utility>
 #include <vector>
 
@@ -22,87 +19,70 @@ bool MorozovaSConnectedComponentsSEQ::ValidationImpl() {
   if (input.empty()) {
     return false;
   }
-  std::size_t cols = input[0].size();
+  const std::size_t cols = input.front().size();
   for (const auto &row : input) {
     if (row.size() != cols) {
       return false;
-    }
-    for (int pixel : row) {
-      if (pixel != 0 && pixel != 1) {
-        return false;
-      }
     }
   }
   return true;
 }
 
 bool MorozovaSConnectedComponentsSEQ::PreProcessingImpl() {
-  const auto &input = GetInput();
-  rows_ = static_cast<int>(input.size());
-  cols_ = static_cast<int>(input[0].size());
-  grid_ = input;
+  grid_ = GetInput();
+  rows_ = static_cast<int>(grid_.size());
+  cols_ = static_cast<int>(grid_.front().size());
   visited_.assign(rows_, std::vector<bool>(cols_, false));
-  GetOutput() = std::vector<std::vector<int>>(rows_, std::vector<int>(cols_, 0));
+  GetOutput().assign(rows_, std::vector<int>(cols_, 0));
   return true;
 }
 
-void MorozovaSConnectedComponentsSEQ::DFSLabeling(int row, int col, int label) {
-  std::stack<std::pair<int, int>> stack;
-  stack.emplace(row, col);
-  visited_[row][col] = true;
-  GetOutput()[row][col] = label;
-  while (!stack.empty()) {
-    auto [current_row, current_col] = stack.top();
-    stack.pop();
-    auto neighbors = GetNeighbors(current_row, current_col);
-    for (const auto &neighbor : neighbors) {
-      int nr = neighbor.first;
-      int nc = neighbor.second;
-      if (!visited_[nr][nc]) {
-        visited_[nr][nc] = true;
-        GetOutput()[nr][nc] = label;
-        stack.emplace(nr, nc);
-      }
+static std::vector<std::pair<int, int>> GetNeighborsSeq(int r, int c, int rows, int cols) {
+  const std::pair<int, int> shifts[] = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
+  std::vector<std::pair<int, int>> result;
+  for (const auto &sh : shifts) {
+    const int nr = r + sh.first;
+    const int nc = c + sh.second;
+    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+      result.emplace_back(nr, nc);
     }
   }
+  return result;
 }
 
-std::vector<std::pair<int, int>> MorozovaSConnectedComponentsSEQ::GetNeighbors(int row, int col) const {
-  std::vector<std::pair<int, int>> neighbors;
-  constexpr std::array<int, 8> kDr = {-1, -1, -1, 0, 0, 1, 1, 1};
-  constexpr std::array<int, 8> kDc = {-1, 0, 1, -1, 1, -1, 0, 1};
-  for (size_t i = 0; i < 8; ++i) {
-    int new_row = row + kDr[i];
-    int new_col = col + kDc[i];
-    if (new_row >= 0 && new_row < rows_ && new_col >= 0 && new_col < cols_ && grid_[new_row][new_col] == 1) {
-      neighbors.emplace_back(new_row, new_col);
-    }
-  }
-  return neighbors;
-}
-
-bool MorozovaSConnectedComponentsSEQ::RunImpl() {
+void MorozovaSConnectedComponentsSEQ::LabelComponents() {
   int label = 1;
   for (int i = 0; i < rows_; ++i) {
     for (int j = 0; j < cols_; ++j) {
-      if (grid_[i][j] == 1 && !visited_[i][j]) {
-        DFSLabeling(i, j, label);
-        ++label;
+      if (grid_[i][j] != 1 || visited_[i][j]) {
+        continue;
       }
+      std::queue<std::pair<int, int>> q;
+      q.emplace(i, j);
+      visited_[i][j] = true;
+      GetOutput()[i][j] = label;
+      while (!q.empty()) {
+        const auto [r, c] = q.front();
+        q.pop();
+        for (const auto &[nr, nc] : GetNeighborsSeq(r, c, rows_, cols_)) {
+          if (!visited_[nr][nc] && grid_[nr][nc] == 1) {
+            visited_[nr][nc] = true;
+            GetOutput()[nr][nc] = label;
+            q.emplace(nr, nc);
+          }
+        }
+      }
+      ++label;
     }
   }
+}
+
+bool MorozovaSConnectedComponentsSEQ::RunImpl() {
+  LabelComponents();
   return true;
 }
 
 bool MorozovaSConnectedComponentsSEQ::PostProcessingImpl() {
-  int max_label = 0;
-  for (const auto &row : GetOutput()) {
-    for (int label_val : row) {
-      max_label = std::max(label_val, max_label);
-    }
-  }
-  auto &output = GetOutput();
-  output.push_back({max_label});
   return true;
 }
 

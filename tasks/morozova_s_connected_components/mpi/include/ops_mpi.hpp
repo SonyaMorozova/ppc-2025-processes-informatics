@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "morozova_s_connected_components/common/include/common.hpp"
+#include "task/include/task.hpp"
 
 namespace morozova_s_connected_components {
 
@@ -12,6 +13,7 @@ class MorozovaSConnectedComponentsMPI : public BaseTask {
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kMPI;
   }
+
   explicit MorozovaSConnectedComponentsMPI(const InType &in);
 
  private:
@@ -20,7 +22,8 @@ class MorozovaSConnectedComponentsMPI : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  void LabelComponentsSEQ();
+  void RunLabeling();
+  void FloodFill(int row, int col, int label);
   [[nodiscard]] std::vector<std::pair<int, int>> GetNeighbors(int row, int col) const;
 
   std::vector<std::vector<int>> grid_;
