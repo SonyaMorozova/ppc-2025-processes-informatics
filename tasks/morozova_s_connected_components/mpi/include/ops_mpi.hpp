@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "morozova_s_connected_components/common/include/common.hpp"
-#include "task/include/task.hpp"
 
 namespace morozova_s_connected_components {
 
@@ -25,10 +24,26 @@ class MorozovaSConnectedComponentsMPI : public BaseTask {
   void FloodFill(int row, int col, int label);
   [[nodiscard]] std::vector<std::pair<int, int>> GetNeighbors(int row, int col) const;
 
-  std::vector<std::vector<int>> grid_;
-  std::vector<std::vector<bool>> visited_;
+  void InitMPI();
+  std::pair<int, int> ComputeRowRange() const;
+  void ComputeLocalComponents(int start_row, int end_row, int base_label);
+  void GatherLocalResults();
+  void MergeBoundaries();
+  void CompressLabels();
+  void NormalizeLabels();
+  void BroadcastResult();
+  void SendLocalResult(int start_row, int end_row);
+  void ReceiveFinalResult();
+
+  int rank_{0};
+  int size_{1};
   int rows_{0};
   int cols_{0};
+  int rows_per_proc_{0};
+  int remainder_{0};
+
+  std::vector<std::vector<int>> grid_;
+  std::vector<std::vector<bool>> visited_;
 };
 
 }  // namespace morozova_s_connected_components
