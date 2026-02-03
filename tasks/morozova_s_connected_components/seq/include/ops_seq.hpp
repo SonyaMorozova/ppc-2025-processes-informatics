@@ -1,6 +1,5 @@
 #pragma once
 
-#include <utility>
 #include <vector>
 
 #include "morozova_s_connected_components/common/include/common.hpp"
@@ -20,6 +19,7 @@ class MorozovaSConnectedComponentsSEQ : public BaseTask {
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
+
   void LabelComponents();
   void DFSLabeling(int row, int col, int label);
 
@@ -28,4 +28,5 @@ class MorozovaSConnectedComponentsSEQ : public BaseTask {
   int rows_{0};
   int cols_{0};
 };
+
 }  // namespace morozova_s_connected_components

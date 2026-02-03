@@ -14,15 +14,13 @@ std::vector<std::pair<int, int>> GetNeighborsSeq(int r, int c, int rows, int col
   constexpr std::array<std::pair<int, int>, 8> shifts = {
       {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}}};
   std::vector<std::pair<int, int>> result;
-  result.reserve(8);
   for (const auto &sh : shifts) {
-    const int nr = r + sh.first;
-    const int nc = c + sh.second;
+    int nr = r + sh.first;
+    int nc = c + sh.second;
     if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
       result.emplace_back(nr, nc);
     }
   }
-
   return result;
 }
 
@@ -40,7 +38,17 @@ bool MorozovaSConnectedComponentsSEQ::ValidationImpl() {
     return true;
   }
   const std::size_t cols = input.front().size();
-  return std::all_of(input.begin(), input.end(), [cols](const std::vector<int> &row) { return row.size() == cols; });
+  for (const auto &row : input) {
+    if (row.size() != cols) {
+      return false;
+    }
+    for (int v : row) {
+      if (v != 0 && v != 1) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 bool MorozovaSConnectedComponentsSEQ::PreProcessingImpl() {
@@ -48,6 +56,7 @@ bool MorozovaSConnectedComponentsSEQ::PreProcessingImpl() {
   rows_ = static_cast<int>(grid_.size());
   if (rows_ == 0) {
     cols_ = 0;
+    GetOutput().clear();
     return true;
   }
   cols_ = static_cast<int>(grid_.front().size());
@@ -95,9 +104,7 @@ bool MorozovaSConnectedComponentsSEQ::PostProcessingImpl() {
   int max_label = 0;
   for (const auto &row : GetOutput()) {
     for (int v : row) {
-      if (v > max_label) {
-        max_label = v;
-      }
+      max_label = std::max(max_label, v);
     }
   }
   GetOutput().push_back({max_label});
