@@ -16,6 +16,7 @@ MorozovaSConnectedComponentsSEQ::MorozovaSConnectedComponentsSEQ(const InType &i
 }
 
 namespace {
+
 constexpr std::array<std::pair<int, int>, 8> kShifts = {
     {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}}};
 
@@ -39,58 +40,56 @@ bool MorozovaSConnectedComponentsSEQ::ValidationImpl() {
 }
 
 bool MorozovaSConnectedComponentsSEQ::PreProcessingImpl() {
-  const auto &input = GetInput();
-  rows_ = input.size();
-  cols_ = input.front().size();
-  labels_.assign(rows_, std::vector<int>(cols_, 0));
+  GetOutput().assign(GetInput().size(), std::vector<int>(GetInput().front().size(), 0));
   return true;
 }
 
 bool MorozovaSConnectedComponentsSEQ::RunImpl() {
   const auto &input = GetInput();
-  int current_label = 0;
+  auto &output = GetOutput();
 
-  for (std::size_t i = 0; i < rows_; ++i) {
-    for (std::size_t j = 0; j < cols_; ++j) {
-      if (input[i][j] != 0 && labels_[i][j] == 0) {
-        ++current_label;
-        std::queue<std::pair<std::size_t, std::size_t>> q;
-        q.emplace(i, j);
-        labels_[i][j] = current_label;
+  const int rows = static_cast<int>(input.size());
+  const int cols = static_cast<int>(input.front().size());
+
+  int current_label = 1;
+  std::queue<std::pair<int, int>> q;
+
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      if (input[i][j] != 0 && output[i][j] == 0) {
+        output[i][j] = current_label;
+        q.push({i, j});
 
         while (!q.empty()) {
           const auto [x, y] = q.front();
           q.pop();
 
           for (const auto &[dx, dy] : kShifts) {
-            const int nx = static_cast<int>(x) + dx;
-            const int ny = static_cast<int>(y) + dy;
+            const int nx = x + dx;
+            const int ny = y + dy;
 
-            if (nx >= 0 && ny >= 0 && nx < static_cast<int>(rows_) && ny < static_cast<int>(cols_)) {
-              const auto ux = static_cast<std::size_t>(nx);
-              const auto uy = static_cast<std::size_t>(ny);
-              if (input[ux][uy] != 0 && labels_[ux][uy] == 0) {
-                labels_[ux][uy] = current_label;
-                q.emplace(ux, uy);
-              }
+            if (nx >= 0 && nx < rows && ny >= 0 && ny < cols && input[nx][ny] != 0 && output[nx][ny] == 0) {
+              output[nx][ny] = current_label;
+              q.push({nx, ny});
             }
           }
         }
+        ++current_label;
       }
     }
   }
+
   return true;
 }
 
 bool MorozovaSConnectedComponentsSEQ::PostProcessingImpl() {
   int max_label = 0;
-  for (const auto &row : labels_) {
+  for (const auto &row : GetOutput()) {
     for (const int v : row) {
       max_label = std::max(max_label, v);
     }
   }
-  GetOutput() = max_label;
-  return true;
+  return max_label > 0;
 }
 
 }  // namespace morozova_s_connected_components
