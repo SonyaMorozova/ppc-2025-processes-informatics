@@ -31,12 +31,7 @@ bool MorozovaSConnectedComponentsSEQ::ValidationImpl() {
   if (cols == 0) {
     return false;
   }
-  for (const auto &row : input) {
-    if (row.size() != cols) {
-      return false;
-    }
-  }
-  return true;
+  return std::ranges::all_of(input, [cols](const auto &row) { return row.size() == cols; });
 }
 
 bool MorozovaSConnectedComponentsSEQ::PreProcessingImpl() {
@@ -58,7 +53,7 @@ bool MorozovaSConnectedComponentsSEQ::RunImpl() {
     for (int j = 0; j < cols; ++j) {
       if (input[i][j] != 0 && output[i][j] == 0) {
         output[i][j] = current_label;
-        q.push({i, j});
+        q.emplace(i, j);
 
         while (!q.empty()) {
           const auto [x, y] = q.front();
@@ -70,7 +65,7 @@ bool MorozovaSConnectedComponentsSEQ::RunImpl() {
 
             if (nx >= 0 && nx < rows && ny >= 0 && ny < cols && input[nx][ny] != 0 && output[nx][ny] == 0) {
               output[nx][ny] = current_label;
-              q.push({nx, ny});
+              q.emplace(nx, ny);
             }
           }
         }

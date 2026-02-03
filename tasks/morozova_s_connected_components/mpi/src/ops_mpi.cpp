@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <queue>
 #include <unordered_map>
 #include <utility>
@@ -129,8 +130,9 @@ void MorozovaSConnectedComponentsMPI::GatherLocalResults() {
 
     for (int i = 0; i < pr; ++i) {
       for (int j = 0; j < cols_; ++j) {
-        GetOutput()[ps + i][j] =
-            buf[static_cast<std::size_t>(i) * static_cast<std::size_t>(cols_) + static_cast<std::size_t>(j)];
+        const std::size_t idx =
+            (static_cast<std::size_t>(i) * static_cast<std::size_t>(cols_)) + static_cast<std::size_t>(j);
+        GetOutput()[ps + i][j] = buf[idx];
       }
     }
   }
@@ -192,8 +194,9 @@ void MorozovaSConnectedComponentsMPI::BroadcastResult() {
   std::vector<int> flat(static_cast<std::size_t>(rows_) * static_cast<std::size_t>(cols_));
   for (int i = 0; i < rows_; ++i) {
     for (int j = 0; j < cols_; ++j) {
-      flat[static_cast<std::size_t>(i) * static_cast<std::size_t>(cols_) + static_cast<std::size_t>(j)] =
-          GetOutput()[i][j];
+      const std::size_t idx =
+          (static_cast<std::size_t>(i) * static_cast<std::size_t>(cols_)) + static_cast<std::size_t>(j);
+      flat[idx] = GetOutput()[i][j];
     }
   }
 
@@ -207,8 +210,9 @@ void MorozovaSConnectedComponentsMPI::SendLocalResult(int start_row, int end_row
   std::vector<int> send(static_cast<std::size_t>(lr) * static_cast<std::size_t>(cols_));
   for (int i = 0; i < lr; ++i) {
     for (int j = 0; j < cols_; ++j) {
-      send[static_cast<std::size_t>(i) * static_cast<std::size_t>(cols_) + static_cast<std::size_t>(j)] =
-          GetOutput()[start_row + i][j];
+      const std::size_t idx =
+          (static_cast<std::size_t>(i) * static_cast<std::size_t>(cols_)) + static_cast<std::size_t>(j);
+      send[idx] = GetOutput()[start_row + i][j];
     }
   }
   MPI_Send(send.data(), static_cast<int>(send.size()), MPI_INT, 0, 0, MPI_COMM_WORLD);
@@ -220,8 +224,9 @@ void MorozovaSConnectedComponentsMPI::ReceiveFinalResult() {
 
   for (int i = 0; i < rows_; ++i) {
     for (int j = 0; j < cols_; ++j) {
-      GetOutput()[i][j] =
-          recv[static_cast<std::size_t>(i) * static_cast<std::size_t>(cols_) + static_cast<std::size_t>(j)];
+      const std::size_t idx =
+          (static_cast<std::size_t>(i) * static_cast<std::size_t>(cols_)) + static_cast<std::size_t>(j);
+      GetOutput()[i][j] = recv[idx];
     }
   }
 }

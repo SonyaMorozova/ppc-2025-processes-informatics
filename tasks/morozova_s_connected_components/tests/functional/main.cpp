@@ -1,12 +1,10 @@
 #include <gtest/gtest.h>
-#include <stb/stb_image.h>
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <string>
 #include <tuple>
-#include <utility>
 #include <vector>
 
 #include "morozova_s_connected_components/common/include/common.hpp"
@@ -105,8 +103,10 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
         }
       }
     }
-    std::sort(labels.begin(), labels.end());
-    labels.erase(std::unique(labels.begin(), labels.end()), labels.end());
+    std::ranges::sort(labels);
+    const auto [first, last] = std::ranges::unique(labels);
+    labels.erase(first, last);
+
     if (!labels.empty()) {
       if (labels[0] != 1) {
         return false;
@@ -116,7 +116,7 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
           return false;
         }
       }
-      if (static_cast<int>(labels.size()) != reported_components) {
+      if (!std::cmp_equal(labels.size(), reported_components)) {
         return false;
       }
     } else if (reported_components != 0) {

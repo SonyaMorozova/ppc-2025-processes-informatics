@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cstddef>
 #include <utility>
 #include <vector>
 
 #include "morozova_s_connected_components/common/include/common.hpp"
+#include "task/include/task.hpp"
 
 namespace morozova_s_connected_components {
 
@@ -25,7 +27,7 @@ class MorozovaSConnectedComponentsMPI : public BaseTask {
   [[nodiscard]] std::vector<std::pair<int, int>> GetNeighbors(int row, int col) const;
 
   void InitMPI();
-  std::pair<int, int> ComputeRowRange() const;
+  [[nodiscard]] std::pair<int, int> ComputeRowRange() const;
   void ComputeLocalComponents(int start_row, int end_row, int base_label);
   void GatherLocalResults();
   void MergeBoundaries();
