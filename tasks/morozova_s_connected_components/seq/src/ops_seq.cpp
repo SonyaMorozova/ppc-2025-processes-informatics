@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -26,7 +27,7 @@ bool MorozovaSConnectedComponentsSEQ::ValidationImpl() {
   if (input.empty()) {
     return false;
   }
-  const std::size_t cols = input.front().size();
+  const size_t cols = input.front().size();
   if (cols == 0) {
     return false;
   }
@@ -47,35 +48,27 @@ bool MorozovaSConnectedComponentsSEQ::RunImpl() {
 
   int current_label = 1;
 
-  auto IsValidNeighbor = [&](int nx, int ny) -> bool {
-    return nx >= 0 && nx < rows && ny >= 0 && ny < cols && input[nx][ny] != 0 && output[nx][ny] == 0;
-  };
-
-  auto FloodFill = [&](int start_i, int start_j, int label) {
-    std::queue<std::pair<int, int>> q;
-    q.emplace(start_i, start_j);
-    output[start_i][start_j] = label;
-
-    while (!q.empty()) {
-      const auto [x, y] = q.front();
-      q.pop();
-
-      for (const auto &[dx, dy] : kShifts) {
-        const int nx = x + dx;
-        const int ny = y + dy;
-
-        if (IsValidNeighbor(nx, ny)) {
-          output[nx][ny] = label;
-          q.emplace(nx, ny);
-        }
-      }
-    }
-  };
-
   for (int i = 0; i < rows; ++i) {
     for (int j = 0; j < cols; ++j) {
       if (input[i][j] != 0 && output[i][j] == 0) {
-        FloodFill(i, j, current_label);
+        output[i][j] = current_label;
+        std::queue<std::pair<int, int>> q;
+        q.emplace(i, j);
+
+        while (!q.empty()) {
+          const auto [x, y] = q.front();
+          q.pop();
+
+          for (const auto &[dx, dy] : kShifts) {
+            const int nx = x + dx;
+            const int ny = y + dy;
+
+            if (nx >= 0 && nx < rows && ny >= 0 && ny < cols && input[nx][ny] != 0 && output[nx][ny] == 0) {
+              output[nx][ny] = current_label;
+              q.emplace(nx, ny);
+            }
+          }
+        }
         ++current_label;
       }
     }

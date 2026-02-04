@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cstddef>
 #include <string>
 #include <tuple>
@@ -117,7 +116,7 @@ class MorozovaSRunFuncTestsConnectedComponents : public ppc::util::BaseRunFuncTe
           return false;
         }
       }
-      if (!std::cmp_equal(labels.size(), reported_components)) {
+      if (labels.size() != static_cast<std::size_t>(reported_components)) {
         return false;
       }
     } else if (reported_components != 0) {
