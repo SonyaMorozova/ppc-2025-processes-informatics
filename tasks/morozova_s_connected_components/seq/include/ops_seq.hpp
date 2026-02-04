@@ -20,11 +20,8 @@ class MorozovaSConnectedComponentsSEQ : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  void LabelComponents();
-  void DFSLabeling(int row, int col, int label);
+  void ProcessComponent(int start_i, int start_j, int current_label);
 
-  std::vector<std::vector<int>> grid_;
-  std::vector<std::vector<bool>> visited_;
   int rows_{0};
   int cols_{0};
 };

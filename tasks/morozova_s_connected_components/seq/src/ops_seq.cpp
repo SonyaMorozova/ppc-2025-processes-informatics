@@ -39,36 +39,43 @@ bool MorozovaSConnectedComponentsSEQ::PreProcessingImpl() {
   return true;
 }
 
+void MorozovaSConnectedComponentsSEQ::ProcessComponent(int start_i, int start_j, int current_label) {
+  const auto &input = GetInput();
+  auto &output = GetOutput();
+
+  output[start_i][start_j] = current_label;
+  std::queue<std::pair<int, int>> q;
+  q.emplace(start_i, start_j);
+
+  while (!q.empty()) {
+    const auto [x, y] = q.front();
+    q.pop();
+
+    for (const auto &[dx, dy] : kShifts) {
+      const int nx = x + dx;
+      const int ny = y + dy;
+
+      if (nx >= 0 && nx < rows_ && ny >= 0 && ny < cols_ && input[nx][ny] != 0 && output[nx][ny] == 0) {
+        output[nx][ny] = current_label;
+        q.emplace(nx, ny);
+      }
+    }
+  }
+}
+
 bool MorozovaSConnectedComponentsSEQ::RunImpl() {
   const auto &input = GetInput();
   auto &output = GetOutput();
 
-  const int rows = static_cast<int>(input.size());
-  const int cols = static_cast<int>(input.front().size());
+  rows_ = static_cast<int>(input.size());
+  cols_ = static_cast<int>(input.front().size());
 
   int current_label = 1;
 
-  for (int i = 0; i < rows; ++i) {
-    for (int j = 0; j < cols; ++j) {
+  for (int i = 0; i < rows_; ++i) {
+    for (int j = 0; j < cols_; ++j) {
       if (input[i][j] != 0 && output[i][j] == 0) {
-        output[i][j] = current_label;
-        std::queue<std::pair<int, int>> q;
-        q.emplace(i, j);
-
-        while (!q.empty()) {
-          const auto [x, y] = q.front();
-          q.pop();
-
-          for (const auto &[dx, dy] : kShifts) {
-            const int nx = x + dx;
-            const int ny = y + dy;
-
-            if (nx >= 0 && nx < rows && ny >= 0 && ny < cols && input[nx][ny] != 0 && output[nx][ny] == 0) {
-              output[nx][ny] = current_label;
-              q.emplace(nx, ny);
-            }
-          }
-        }
+        ProcessComponent(i, j, current_label);
         ++current_label;
       }
     }

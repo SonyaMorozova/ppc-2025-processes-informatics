@@ -32,7 +32,7 @@ class MorozovaSConnectedComponentsMPI : public BaseTask {
   void GatherLocalResults();
   void MergeBoundaries();
   void ProcessBoundaryCell(int proc, int j, int dj, std::unordered_map<int, int> &parent);
-  int FindRoot(std::unordered_map<int, int> &parent, int v);
+  static int FindRoot(std::unordered_map<int, int> &parent, int v);
   void NormalizeLabels();
   void BroadcastResult();
   void SendLocalResult(int start_row, int end_row);
@@ -44,9 +44,6 @@ class MorozovaSConnectedComponentsMPI : public BaseTask {
   int cols_{0};
   int rows_per_proc_{0};
   int remainder_{0};
-
-  std::vector<std::vector<int>> grid_;
-  std::vector<std::vector<bool>> visited_;
 };
 
 }  // namespace morozova_s_connected_components
