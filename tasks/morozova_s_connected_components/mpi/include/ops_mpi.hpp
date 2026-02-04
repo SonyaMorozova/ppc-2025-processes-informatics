@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -30,7 +31,8 @@ class MorozovaSConnectedComponentsMPI : public BaseTask {
   void ComputeLocalComponents(int start_row, int end_row, int base_label);
   void GatherLocalResults();
   void MergeBoundaries();
-  void CompressLabels();
+  void ProcessBoundaryCell(int proc, int j, int dj, std::unordered_map<int, int> &parent);
+  int FindRoot(std::unordered_map<int, int> &parent, int v);
   void NormalizeLabels();
   void BroadcastResult();
   void SendLocalResult(int start_row, int end_row);
