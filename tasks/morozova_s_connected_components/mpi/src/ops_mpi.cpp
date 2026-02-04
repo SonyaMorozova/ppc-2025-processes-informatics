@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cstddef>
 #include <queue>
 #include <unordered_map>
 #include <utility>
@@ -141,10 +140,10 @@ void MorozovaSConnectedComponentsMPI::GatherLocalResults() {
 void MorozovaSConnectedComponentsMPI::MergeBoundaries() {
   std::unordered_map<int, int> parent;
 
-  for (int proc = 1; proc < size_; ++proc) {
+  auto ProcessBoundary = [&](int proc) {
     const int br = (proc * rows_per_proc_) + std::min(proc, remainder_);
     if (br <= 0 || br >= rows_) {
-      continue;
+      return;
     }
 
     for (int j = 0; j < cols_; ++j) {
@@ -162,15 +161,25 @@ void MorozovaSConnectedComponentsMPI::MergeBoundaries() {
         }
       }
     }
+  };
+
+  for (int proc = 1; proc < size_; ++proc) {
+    ProcessBoundary(proc);
   }
+
+  auto FindRoot = [&](int v) -> int {
+    while (parent.contains(v)) {
+      v = parent[v];
+    }
+    return v;
+  };
 
   for (int i = 0; i < rows_; ++i) {
     for (int j = 0; j < cols_; ++j) {
-      int v = GetOutput()[i][j];
-      while (parent.contains(v)) {
-        v = parent[v];
+      int &v = GetOutput()[i][j];
+      if (v > 0) {
+        v = FindRoot(v);
       }
-      GetOutput()[i][j] = v;
     }
   }
 }
