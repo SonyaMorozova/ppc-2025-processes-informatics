@@ -47,8 +47,7 @@ bool MorozovaSConnectedComponentsMPI::ValidationImpl() {
 }
 
 bool MorozovaSConnectedComponentsMPI::PreProcessingImpl() {
-  const auto &input = GetInput();
-  rows_ = static_cast<int>(input.size());
+  rows_ = static_cast<int>(GetInput().size());
 
   if (rows_ == 0) {
     cols_ = 0;
@@ -56,7 +55,7 @@ bool MorozovaSConnectedComponentsMPI::PreProcessingImpl() {
     return true;
   }
 
-  cols_ = static_cast<int>(input.front().size());
+  cols_ = static_cast<int>(GetInput().front().size());
   GetOutput().assign(rows_, std::vector<int>(cols_, 0));
   return true;
 }
@@ -74,7 +73,7 @@ std::pair<int, int> MorozovaSConnectedComponentsMPI::ComputeRowRange() const {
   return {start, end};
 }
 
-std::vector<std::pair<int, int>> MorozovaSConnectedComponentsMPI::GetNeighbors(int row, int col) const {
+std::vector<std::pair<int, int>> MorozovaSConnectedComponentsMPI::GetNeighbors(int row, int col) {
   std::vector<std::pair<int, int>> neighbors;
   const auto &input = GetInput();
 
@@ -121,7 +120,6 @@ void MorozovaSConnectedComponentsMPI::ComputeLocalComponents(int start_row, int 
   for (int i = start_row; i < end_row; ++i) {
     for (int j = 0; j < cols_; ++j) {
       if (input[i][j] == 1 && output[i][j] == 0) {
-        // Временный visited для каждого вызова FloodFill
         FloodFill(i, j, base_label + local_label);
         ++local_label;
       }
