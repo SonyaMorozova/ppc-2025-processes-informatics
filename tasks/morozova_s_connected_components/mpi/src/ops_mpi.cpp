@@ -111,7 +111,6 @@ void MorozovaSConnectedComponentsMPI::FloodFill(int row, int col, int label) {
 }
 
 void MorozovaSConnectedComponentsMPI::ComputeLocalComponents(int start_row, int end_row, int base_label) {
-  const auto &input = GetInput();
   auto &output = GetOutput();
 
   std::vector<std::vector<bool>> visited(rows_, std::vector<bool>(cols_, false));
