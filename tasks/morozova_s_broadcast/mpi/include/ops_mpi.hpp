@@ -14,6 +14,10 @@ class MorozovaSBroadcastMPI : public BaseTask {
   explicit MorozovaSBroadcastMPI(const InType &in);
   explicit MorozovaSBroadcastMPI(const InType &in, int root);
 
+  int GetRoot() const {
+    return root_;
+  }
+
  private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;

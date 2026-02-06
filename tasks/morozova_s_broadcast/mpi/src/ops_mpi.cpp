@@ -3,6 +3,7 @@
 #include <mpi.h>
 
 #include <algorithm>
+#include <iostream>
 
 #include "morozova_s_broadcast/common/include/common.hpp"
 #include "task/include/task.hpp"
@@ -26,7 +27,15 @@ MorozovaSBroadcastMPI::MorozovaSBroadcastMPI(const InType &in, int root) : root_
 bool MorozovaSBroadcastMPI::ValidationImpl() {
   int size = 0;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  return root_ >= 0 && root_ < size;
+  if (root_ < 0 || root_ >= size) {
+    return false;
+  }
+  int rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank == root_) {
+    return !GetInput().empty();
+  }
+  return true;
 }
 
 bool MorozovaSBroadcastMPI::PreProcessingImpl() {
@@ -36,24 +45,18 @@ bool MorozovaSBroadcastMPI::PreProcessingImpl() {
 bool MorozovaSBroadcastMPI::RunImpl() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
   int data_size = 0;
   if (rank == root_) {
     data_size = static_cast<int>(GetInput().size());
   }
-
   CustomBroadcast(&data_size, 1, MPI_INT, root_, MPI_COMM_WORLD);
-
-  GetOutput().resize(data_size);
-
-  if (rank == root_ && data_size > 0) {
-    std::copy(GetInput().begin(), GetInput().end(), GetOutput().begin());
-  }
-
+  GetOutput().resize(static_cast<size_t>(data_size));
   if (data_size > 0) {
+    if (rank == root_) {
+      std::copy(GetInput().begin(), GetInput().end(), GetOutput().begin());
+    }
     CustomBroadcast(GetOutput().data(), data_size, MPI_INT, root_, MPI_COMM_WORLD);
   }
-
   return true;
 }
 
@@ -66,17 +69,21 @@ void MorozovaSBroadcastMPI::CustomBroadcast(void *buffer, int count, MPI_Datatyp
   int size = 0;
   MPI_Comm_rank(comm, &rank);
   MPI_Comm_size(comm, &size);
-
+  if (size <= 1) {
+    return;
+  }
   int vrank = (rank - root + size) % size;
-
   for (int step = 1; step < size; step <<= 1) {
     if (vrank < step) {
-      int dst = vrank + step;
-      if (dst < size) {
-        MPI_Send(buffer, count, type, (dst + root) % size, 0, comm);
+      int dst_vrank = vrank + step;
+      if (dst_vrank < size) {
+        int dst_rank = (dst_vrank + root) % size;
+        MPI_Send(buffer, count, type, dst_rank, 0, comm);
       }
     } else if (vrank < 2 * step) {
-      MPI_Recv(buffer, count, type, (vrank - step + root) % size, 0, comm, MPI_STATUS_IGNORE);
+      int src_vrank = vrank - step;
+      int src_rank = (src_vrank + root) % size;
+      MPI_Recv(buffer, count, type, src_rank, 0, comm, MPI_STATUS_IGNORE);
     }
   }
 }

@@ -10,7 +10,7 @@ MorozovaSBroadcastSEQ::MorozovaSBroadcastSEQ(const InType &in) {
 }
 
 bool MorozovaSBroadcastSEQ::ValidationImpl() {
-  return true;
+  return !GetInput().empty();
 }
 
 bool MorozovaSBroadcastSEQ::PreProcessingImpl() {
