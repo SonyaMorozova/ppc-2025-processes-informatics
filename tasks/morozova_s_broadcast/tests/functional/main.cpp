@@ -1,11 +1,9 @@
 #include <gtest/gtest.h>
-#include <mpi.h>
 
 #include <array>
 #include <cstddef>
 #include <string>
 #include <tuple>
-#include <vector>
 
 #include "morozova_s_broadcast/common/include/common.hpp"
 #include "morozova_s_broadcast/mpi/include/ops_mpi.hpp"
